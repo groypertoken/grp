@@ -1,6 +1,6 @@
 import { DEX, pTON } from "@ston-fi/sdk";
-import { toNano, WalletContractV5R1 } from "@ton/ton";
-import { createKeyPair, createTonClient, GROYP_CONTRACT, log, randomFloat, sleep, createWallet } from './utils.js';
+import { fromNano, toNano } from "@ton/ton";
+import { createKeyPair, createTonClient, createWallet, GROYP_CONTRACT, log, randomFloat, sleep } from './utils.js';
 
 const client = createTonClient();
 const keyPair = await createKeyPair();
@@ -12,9 +12,9 @@ const stonFi = client.open(new DEX.v1.Router());
 
 const provider = contract.sender(keyPair.secretKey)
 
-async function stonFiSwapTon(amount) {
+async function stonFiSwapTon(nanoTonAmount) {
     const txArgs = {
-        offerAmount: toNano(amount),
+        offerAmount: nanoTonAmount,
         askJettonAddress: GROYP_CONTRACT,
         minAskAmount: toNano("0.1"),
         proxyTon: new pTON.v1(),
@@ -22,7 +22,7 @@ async function stonFiSwapTon(amount) {
     };
 
     await stonFi.sendSwapTonToJetton(provider, txArgs);
-    log(`✅ stonFi swap ${amount} Ton`);
+    log(`✅ stonFi swap ${fromNano(nanoTonAmount)} Ton`);
 }
 
 async function stonFiSwapGroyp(amount) {
@@ -37,8 +37,13 @@ async function stonFiSwapGroyp(amount) {
     log(`✅ stonFi swap ${amount} Groyp`);
 }
 
+async function getNanoTonBalance() {
+    return await contract.getBalance()
+}
+
 export async function swapStonFi() {
-    await stonFiSwapTon(randomFloat(0.5, 1))
-    await sleep(20 * 1000)
+    const tonHalfBalance = await getNanoTonBalance() / 2n
+    await stonFiSwapTon(tonHalfBalance)
+    await sleep(30 * 1000)
     await stonFiSwapGroyp(randomFloat(1000, 3500))
 }
