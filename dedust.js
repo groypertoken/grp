@@ -1,27 +1,10 @@
-import {Address, toNano, TonClient, WalletContractV5R1} from "@ton/ton";
-import {mnemonicToPrivateKey} from "@ton/crypto";
-import {Asset, Factory, JettonRoot, MAINNET_FACTORY_ADDR, PoolType, ReadinessStatus, VaultJetton} from "@dedust/sdk";
+import { Asset, Factory, JettonRoot, MAINNET_FACTORY_ADDR, PoolType, ReadinessStatus, VaultJetton } from "@dedust/sdk";
+import { Address, toNano, WalletContractV5R1 } from "@ton/ton";
 import 'dotenv/config';
-import { randomFloat, log, sleep, GROYP_CONTRACT } from './utils.js';
+import { createKeyPair, createTonClient, GROYP_CONTRACT, log, randomFloat, sleep } from './utils.js';
 
-const apiKey = process.env.API_KEY;
-if (!apiKey) {
-  throw new Error("❌ API_KEY .env");
-}
-
-const client = new TonClient({
-    endpoint: "https://toncenter.com/api/v2/jsonRPC",
-    apiKey: apiKey
-});
-
-const seed = process.env.SEED;
-if (!seed) {
-  throw new Error("❌ SEED .env");
-}
-
-const mnemonics = seed.trim().split(" ");
-
-const keyPair = await mnemonicToPrivateKey(mnemonics);
+const client = createTonClient()
+const keyPair = await createKeyPair();
 
 const workchain = 0;
 const wallet = WalletContractV5R1.create({
@@ -29,8 +12,7 @@ const wallet = WalletContractV5R1.create({
     publicKey: keyPair.publicKey,
 });
 
-
-log(`Wallet V5: ${wallet.address.toString({bounceable: false})}`)
+log(`Wallet V5: ${wallet.address.toString({ bounceable: false })}`)
 
 const contract = client.open(wallet);
 
