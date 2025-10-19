@@ -1,14 +1,24 @@
 import { mnemonicToPrivateKey } from "@ton/crypto";
-import { TonClient, WalletContractV5R1 } from "@ton/ton";
+import { Address, fromNano, JettonWallet, TonClient, WalletContractV5R1 } from "@ton/ton";
 
+/**
+ * @param {string | bigint} text
+ */
 export function log(text) {
     console.log(`[${new Date().toLocaleTimeString()}] ${text}`);
 }
 
+/**
+ * @param {number} min
+ * @param {number} max
+ */
 export function randomFloat(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+/**
+ * @param {number} ms
+ */
 export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -52,4 +62,14 @@ export async function createWallet() {
 
     log(`Wallet V5: ${wallet.address.toString({ bounceable: false })}`)
     return wallet
+}
+
+/**
+ * @param {import("@ton/ton").ContractProvider} provider
+ */
+export async function getJettonBalance(provider) {
+    const jettonWallet = JettonWallet.create(Address.parse(GROYP_CONTRACT))
+    const balance = await jettonWallet.getBalance(provider)
+    log(`Groyp balance: ${fromNano(balance)}`)
+    return balance
 }
