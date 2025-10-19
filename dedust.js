@@ -1,10 +1,8 @@
 import {Address, toNano, TonClient, WalletContractV5R1} from "@ton/ton";
 import {mnemonicToPrivateKey} from "@ton/crypto";
-import {DEX, pTON} from "@ston-fi/sdk";
 import {Asset, Factory, JettonRoot, MAINNET_FACTORY_ADDR, PoolType, ReadinessStatus, VaultJetton} from "@dedust/sdk";
 import 'dotenv/config';
-
-const JETTON = "EQAtwo6qMNwtr0iTA9eKVZ32cuACFJ0VKd78GrBWOe83-X1P"
+import { randomFloat, log, sleep, GROYP_CONTRACT } from './utils.js';
 
 const apiKey = process.env.API_KEY;
 if (!apiKey) {
@@ -31,16 +29,11 @@ const wallet = WalletContractV5R1.create({
     publicKey: keyPair.publicKey,
 });
 
-function log(text) {
-    console.log(`[${new Date().toLocaleTimeString()}] ${text}`);
-
-}
 
 log(`Wallet V5: ${wallet.address.toString({bounceable: false})}`)
 
 const contract = client.open(wallet);
 
-const stonFi = client.open(new DEX.v1.Router());
 const deDust = client.open(Factory.createFromAddress(MAINNET_FACTORY_ADDR));
 
 const provider = contract.sender(keyPair.secretKey)
@@ -48,7 +41,7 @@ const provider = contract.sender(keyPair.secretKey)
 async function deDustSwapTon(amount) {
     const tonVault = client.open(await deDust.getNativeVault());
     const TON = Asset.native();
-    const GROYP = Asset.jetton(Address.parse(JETTON));
+    const GROYP = Asset.jetton(Address.parse(GROYP_CONTRACT));
     const pool = client.open(await deDust.getPool(PoolType.VOLATILE, [TON, GROYP]));
 
     if ((await pool.getReadinessStatus()) !== ReadinessStatus.READY) {
@@ -69,7 +62,7 @@ async function deDustSwapTon(amount) {
 }
 
 async function deDustSwapGroyp(amount) {
-    const JETTON_ADDRESS = Address.parse(JETTON);
+    const JETTON_ADDRESS = Address.parse(GROYP_CONTRACT);
     const GROYP = Asset.jetton(JETTON_ADDRESS);
     const TON = Asset.native();
     const pool = client.open(await deDust.getPool(PoolType.VOLATILE, [TON, GROYP]));
@@ -98,63 +91,8 @@ async function deDustSwapGroyp(amount) {
     log(`✅ deDust swap ${amount} Groyp`);
 }
 
-async function stonFiSwapTon(amount) {
-    const txArgs = {
-        offerAmount: toNano(amount),
-        askJettonAddress: JETTON,
-        minAskAmount: toNano("0.1"),
-        proxyTon: new pTON.v1(),
-        userWalletAddress: wallet.address.toString(),
-    };
-
-    await stonFi.sendSwapTonToJetton(provider, txArgs);
-    log(`✅ stonFi swap ${amount} Ton`);
-}
-
-async function stonFiSwapGroyp(amount) {
-    const txArgs = {
-        userWalletAddress: wallet.address.toString(),
-        proxyTon: new pTON.v1(),
-        offerJettonAddress: JETTON,
-        offerAmount: toNano(amount),
-        minAskAmount: toNano("0.1"),
-    };
-    await stonFi.sendSwapJettonToTon(provider, txArgs);
-    log(`✅ stonFi swap ${amount} Groyp`);
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function randomFloat(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-async function swapDeDust() {
+export async function swapDeDust() {
     await deDustSwapTon(randomFloat(0.5, 1))
     await sleep(20 * 1000)
     await deDustSwapGroyp(randomFloat(1000, 3500))
 }
-
-async function swapStonFi() {
-    await stonFiSwapTon(randomFloat(0.5, 1))
-    await sleep(20 * 1000)
-    await stonFiSwapGroyp(randomFloat(1000, 3500))
-}
-
-async function makeSomeShit() {
-    // const tasks = [swapStonFi, swapDeDust];
-    const tasks = [swapStonFi];
-    const randomSwap = tasks[Math.floor(Math.random() * tasks.length)];
-    await randomSwap();
-
-    const delay = randomFloat(60, 600)
-    log(`⏳ Delay: ${(delay / 60).toFixed(1)}m`);
-    setTimeout(() => {
-        makeSomeShit()
-    }, delay * 1000)
-}
-
-await makeSomeShit()
-
