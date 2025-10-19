@@ -1,18 +1,10 @@
 import { Asset, Factory, JettonRoot, MAINNET_FACTORY_ADDR, PoolType, ReadinessStatus, VaultJetton } from "@dedust/sdk";
-import { Address, toNano, WalletContractV5R1 } from "@ton/ton";
-import 'dotenv/config';
-import { createKeyPair, createTonClient, GROYP_CONTRACT, log, randomFloat, sleep } from './utils.js';
+import { Address, toNano } from "@ton/ton";
+import { createKeyPair, createTonClient, createWallet, GROYP_CONTRACT, log, randomFloat, sleep } from './utils.js';
 
 const client = createTonClient()
 const keyPair = await createKeyPair();
-
-const workchain = 0;
-const wallet = WalletContractV5R1.create({
-    workchain,
-    publicKey: keyPair.publicKey,
-});
-
-log(`Wallet V5: ${wallet.address.toString({ bounceable: false })}`)
+const wallet = await createWallet();
 
 const contract = client.open(wallet);
 

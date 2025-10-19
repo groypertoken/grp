@@ -1,5 +1,5 @@
 import { mnemonicToPrivateKey } from "@ton/crypto";
-import { TonClient } from "@ton/ton";
+import { TonClient, WalletContractV5R1 } from "@ton/ton";
 
 export function log(text) {
     console.log(`[${new Date().toLocaleTimeString()}] ${text}`);
@@ -39,4 +39,17 @@ export async function createKeyPair() {
 
     const keyPair = await mnemonicToPrivateKey(mnemonics);
     return keyPair
+}
+
+export async function createWallet() {
+    const keyPair = await createKeyPair()
+
+    const workchain = 0;
+    const wallet = WalletContractV5R1.create({
+        workchain,
+        publicKey: keyPair.publicKey,
+    });
+
+    log(`Wallet V5: ${wallet.address.toString({ bounceable: false })}`)
+    return wallet
 }
